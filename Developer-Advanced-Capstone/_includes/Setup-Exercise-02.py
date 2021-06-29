@@ -119,8 +119,8 @@ def reality_check_02_b_city():
 
   def execute_solution():
     reset_environment() 
-    print(f"Removing {bronze_cty_path}")
-    dbutils.fs.rm(bronze_cty_path, True)
+    remove_delta_table_at(path)
+
     print(f"Executing your solution...")
     configure_bronze_job(max_part_file_size=max_file_size_bytes)
     create_bronze_dataset(src_path=raw_cty_path, dst_path=bronze_cty_path, name="Cities")
@@ -165,8 +165,8 @@ def reality_check_02_b_retailers():
 
   def execute_solution():
     reset_environment() 
-    print(f"Removing {bronze_ret_path}")
-    dbutils.fs.rm(bronze_ret_path, True)
+    remove_delta_table_at(path)
+
     print(f"Executing your solution...")
     configure_bronze_job(max_part_file_size=max_file_size_bytes)
     create_bronze_dataset(src_path=raw_ret_path, dst_path=bronze_ret_path, name="Retailers")
@@ -209,8 +209,8 @@ def reality_check_02_b_transactions():
 
   def execute_solution():
     reset_environment() 
-    print(f"Removing {path}")
-    dbutils.fs.rm(path, True)
+    remove_delta_table_at(path)
+
     print(f"Executing your solution...")
     configure_bronze_job(max_part_file_size=max_file_size_bytes)
     create_bronze_dataset(src_path=raw_trx_path, dst_path=path, name="Transactions")
@@ -279,8 +279,8 @@ def reality_check_02_c():
   def execute_solution():
     global test_df
     reset_environment() 
-    print(f"Removing {path}")
-    dbutils.fs.rm(path, True)
+    remove_delta_table_at(path)
+
     print(f"Executing your solution...")
     configure_silver_job(max_part_file_size=max_file_size_bytes)
     test_df = create_silver_trx_cty_df(cty_src_path=bronze_cty_path, trx_src_path=bronze_trx_path)
@@ -308,17 +308,15 @@ def reality_check_02_c():
   suite.test(f"{suite_name}.total",     f"Correct Record Count", dependsOn=[suite.lastTestId()], 
              testFunction = lambda: exp_trx_count == spark.read.format("delta").load(path).count())
   
-  zh = get_delta_history(path, "OPTIMIZE", "operationParameters.zOrderBy")
   suite.test(f"{suite_name}.index_cty", f"High-Cardinality index on City ID", dependsOn=[suite.lastTestId()], 
-             testFunction = lambda: validate_zordered_by_any(zh, ["city_id", "z_city_id"]))
+             testFunction = lambda: validate_zordered_by_any(get_delta_history(path, "OPTIMIZE", "operationParameters.zOrderBy"), ["city_id", "z_city_id"]))
   suite.test(f"{suite_name}.index_trx", f"High-Cardinality index on Transaction ID", dependsOn=[suite.lastTestId()], 
-             testFunction = lambda: validate_zordered_by_any(zh, ["trx_id", "z_trx_id"]))
+             testFunction = lambda: validate_zordered_by_any(get_delta_history(path, "OPTIMIZE", "operationParameters.zOrderBy"), ["trx_id", "z_trx_id"]))
   suite.test(f"{suite_name}.index_ret", f"High-Cardinality index on Retailer ID", dependsOn=[suite.lastTestId()], 
-             testFunction = lambda: validate_zordered_by_any(zh, ["retailer_id", "z_retailer_id"]))
+             testFunction = lambda: validate_zordered_by_any(get_delta_history(path, "OPTIMIZE", "operationParameters.zOrderBy"), ["retailer_id", "z_retailer_id"]))
 
-  ph = get_delta_history(path, "WRITE", "operationParameters.partitionBy")
   suite.test(f"{suite_name}.index_year", f"Low-Cardinality index on Year", dependsOn=[suite.lastTestId()], 
-             testFunction = lambda: validate_partitioned_by_any(ph, ["year", "p_year"]))
+             testFunction = lambda: validate_partitioned_by_any(get_delta_history(path, "WRITE", "operationParameters.partitionBy"), ["year", "p_year"]))
   
   suite.test(f"{suite_name}.index_all", f"Advertised all indexes", dependsOn=[suite.lastTestId()], 
              testFunction = lambda: validate_columns_exist(path_to_table("delta", path), ["z_trx_id", "z_city_id", "z_retailer_id", "p_year"]))
@@ -420,8 +418,10 @@ def reality_check_02_d_transactions():
   
   def execute_solution():
     reset_environment() 
+    
     print(f"Dropping {table}...")
     spark.sql(f"DROP TABLE IF EXISTS {table}")
+    
     print(f"Executing your solution...")
     bucket_dataset(bronze_trx_path, path, table, buckets, "Transactions")
     print(f"Testing the join operation...")

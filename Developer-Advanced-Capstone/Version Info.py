@@ -9,7 +9,7 @@
 
 # MAGIC %md # Project Information
 # MAGIC 
-# MAGIC * Name: **Developer Advanced Capstone**
-# MAGIC * Version:  **0.0.1**
-# MAGIC * Built On: **May 10, 2021 at 23:07:18 UTC**
+# MAGIC * Name: **Developer Foundations Capstone**
+# MAGIC * Version:  **1.1.3**
+# MAGIC * Built On: **Jun 29, 2021 at 22:02:48 UTC**
 # MAGIC * Language: **Python**

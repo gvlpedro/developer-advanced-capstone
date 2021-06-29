@@ -158,6 +158,7 @@ def get_delta_history(path, operation, key):
       .select(FA.col(key).alias(alias))
     ).collect()
   except Exception as e:
+    print(f"**** DEBUG: Describing history for {path}")
     print(e)
     return []
 
@@ -181,6 +182,24 @@ def explain_data_frame(data_frame):
 None # Suppress output
 
 # COMMAND ----------
+
+def remove_delta_table_at(path):
+  import time
+  print(f"Removing {path}")
+  
+  try:
+    spark.sql(f"DROP TABLE IF EXISTS delta.`{path}`")
+  except:
+    print(f"**** DEBUG: Failed to drop table at {path}")
+  
+  try:
+    dbutils.fs.rm(path, True)
+  except:
+    print(f"**** DEBUG: Failed to delete directory at {path}")
+  
+  # Give us 5 seconds to deal with
+  # eventual consistency issues
+  time.sleep(5)
 
 def validate_file_count(path, expected):
   files = dbutils.fs.ls(path)
@@ -364,7 +383,11 @@ def validate_broadcasted(data_frame):
 
 def validate_aqe_skew_join():
   aqe_enabled = str(spark.conf.get("spark.sql.adaptive.enabled")).lower() == "true"
+  if not aqe_enabled: raise Exception("Adaptive Query Execution is not enabled.")
+    
   sj_enabled = str(spark.conf.get("spark.sql.adaptive.skewJoin.enabled")).lower() == "true"
+  if not sj_enabled: raise Exception("AQE's Skew Join is not enabled.")
+    
   return aqe_enabled and sj_enabled
 
 def validate_bloom_filter_indexes(table_path, expected_indexes, expected_fpp, expected_num_items):
