@@ -17,7 +17,7 @@ def reality_check_01_a():
   suite_name = "ex.01.a"
   suite = TestSuite()
   
-  suite.test(f"{suite_name}.cluster", f"Using DBR 7.3 LTS, with 8 cores", dependsOn=[suite.lastTestId()], 
+  suite.test(f"{suite_name}.cluster", f"Using DBR 7.3 LTS, with 4 or 8 cores", dependsOn=[suite.lastTestId()], 
              testFunction = validate_cluster)
   
   suite.test(f"{suite_name}.reg_id", f"Registration ID was specified", dependsOn=[suite.lastTestId()], 
